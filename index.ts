@@ -37,7 +37,7 @@ const ec2Instance = new aws.ec2.Instance("windowsInstance", {
                 </powershell>`,
     tags: {
         "Name": "PatchMe",
-        "OS": "Windows",
+        "OS": "Windowz",
         "PatchGroup": "DEV"
     }
 });
