@@ -1,4 +1,5 @@
 import * as aws from "@pulumi/aws";
+import { main } from "@pulumi/pulumi/provider";
 
 // Create an IAM Role
 const role = new aws.iam.Role("instanceRole", {
@@ -18,11 +19,11 @@ const role = new aws.iam.Role("instanceRole", {
 const policyAttachment = new aws.iam.RolePolicyAttachment("instanceRolePolicyAttachment", {
     role: role,
     policyArn: "arn:aws:iam::aws:policy/AmazonSSMFullAccess",
-});
+}, { parent: role });
 
 const instanceProfile = new aws.iam.InstanceProfile("instanceProfile", {
     role: role.name,
-});
+}, { parent: role });
 
 // Launch an EC2 instance with the SSM Agent installed
 const ec2Instance = new aws.ec2.Instance("windowsInstance", {
@@ -68,7 +69,7 @@ const ssmAssociation = new aws.ssm.Association("ssmAssociation", {
         key: "InstanceIds",
         values: [ec2Instance.id],
     }],
-});
+}, { parent: configureSoftwareDocument });
 
 // Create an SSM Patch Baseline for patching operations
 const patchBaseline = new aws.ssm.PatchBaseline("patchBaseline", {
@@ -83,11 +84,9 @@ const patchBaseline = new aws.ssm.PatchBaseline("patchBaseline", {
     }],
 });
 
-
 const patchGroup = new aws.ssm.PatchGroup("patchGroup", {
     baselineId: patchBaseline.id,
     patchGroup: "DEV",
-
 });
 
 // Create an SSM maintenance window
@@ -105,7 +104,7 @@ const maintenanceWindowTarget = new aws.ssm.MaintenanceWindowTarget("windowTarge
         key: "tag:PatchGroup",
         values: ["DEV"],
     }],
-});
+}, { parent: maintenanceWindow });
 
 // Register a task with the maintenance window to apply patches
 const maintenanceWindowTask = new aws.ssm.MaintenanceWindowTask("windowTask", {
@@ -131,7 +130,7 @@ const maintenanceWindowTask = new aws.ssm.MaintenanceWindowTask("windowTask", {
             }],
         },
     },
-});
+}, { parent: maintenanceWindow });
 
 // Export the IDs of the resources
 export const ssmDocumentId = configureSoftwareDocument.id;
